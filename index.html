@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Fat Loss Calendar</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f1117;color:#e8eaf0;padding:16px 12px 60px;min-height:100vh}
+.top-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+h1{font-size:1.1rem;font-weight:700;background:linear-gradient(135deg,#6c63ff,#4ade80);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.month-nav{display:flex;align-items:center;gap:8px}
+.month-title{font-size:0.9rem;font-weight:600;min-width:130px;text-align:center;color:#e8eaf0}
+.nav-btn{background:none;border:1px solid #2a2d3a;border-radius:8px;width:30px;height:30px;cursor:pointer;color:#7b7f96;font-size:1rem;display:flex;align-items:center;justify-content:center}
+.nav-btn:hover{background:#1a1d27;color:#e8eaf0}
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.stat-card{background:#1a1d27;border-radius:10px;padding:10px;border:1px solid #2a2d3a}
+.stat-label{font-size:10px;color:#7b7f96;margin-bottom:3px}
+.stat-val{font-size:1.4rem;font-weight:700;color:#e8eaf0}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.day-label{font-size:10px;color:#7b7f96;text-align:center;padding:3px 0;font-weight:600}
+.day-cell{border:1px solid #2a2d3a;border-radius:8px;padding:5px 4px;min-height:62px;cursor:pointer;background:#1a1d27;transition:border-color 0.15s}
+.day-cell:hover{border-color:#6c63ff}
+.day-cell.empty{cursor:default;background:none;border-color:transparent}
+.day-cell.today{border:1.5px solid #6c63ff}
+.day-num{font-size:11px;font-weight:600;color:#7b7f96;margin-bottom:4px}
+.day-cell.today .day-num{color:#6c63ff}
+.day-cell.full-done .day-num::after{content:' ✓';color:#4ade80}
+.mini-prog{height:3px;background:#2a2d3a;border-radius:99px;overflow:hidden;margin-bottom:3px}
+.mini-fill{height:100%;background:#4ade80;border-radius:99px}
+.done-count{font-size:9px;color:#7b7f96}
+.done-count.full{color:#4ade80;font-weight:600}
+
+/* Modal */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:100;align-items:flex-end;justify-content:center}
+.modal-bg.show{display:flex}
+.modal{background:#1a1d27;border-radius:20px 20px 0 0;border:1px solid #2a2d3a;width:100%;max-width:480px;max-height:88vh;overflow-y:auto;padding:20px 16px 32px}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.modal-title{font-size:1rem;font-weight:700;color:#e8eaf0}
+.close-btn{background:none;border:none;cursor:pointer;color:#7b7f96;font-size:1.3rem;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:6px}
+.close-btn:hover{background:#20232f;color:#e8eaf0}
+.prog-row{display:flex;justify-content:space-between;margin-bottom:5px}
+.prog-text{font-size:11px;color:#7b7f96}
+.progress-bar{height:6px;background:#2a2d3a;border-radius:99px;overflow:hidden;margin-bottom:16px}
+.progress-fill{height:100%;background:linear-gradient(90deg,#6c63ff,#4ade80);border-radius:99px;transition:width 0.3s}
+.sec-title{font-size:10px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#7b7f96;margin:14px 0 6px 4px;display:flex;align-items:center;gap:6px}
+.sec-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.d-apt{background:#fbbf24}
+.d-str{background:#6c63ff}
+.d-car{background:#ff6b6b}
+.d-nut{background:#4ade80}
+.ex-row{display:flex;align-items:flex-start;gap:10px;padding:9px 8px;border-radius:8px;cursor:pointer;transition:background 0.12s}
+.ex-row:hover{background:#20232f}
+.check{width:19px;height:19px;border-radius:5px;border:1.5px solid #3a3d4a;flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-top:1px;transition:all 0.15s}
+.ex-row.ticked .check{background:#4ade80;border-color:#4ade80}
+.tick{display:none;color:#0f1117;font-size:11px;font-weight:900}
+.ex-row.ticked .tick{display:block}
+.ex-row.ticked .ex-name{color:#4a4d5a;text-decoration:line-through}
+.ex-name{font-size:13px;font-weight:600;color:#e8eaf0;line-height:1.3}
+.ex-detail{font-size:11px;color:#7b7f96;margin-top:2px}
+</style>
+
+</head>
+<body>
+
+<div class="top-bar">
+<h1>My Fat Loss Plan 🔥</h1>
+</div>
+
+<div class="top-bar">
+<div class="month-nav">
+<button class="nav-btn" onclick="changeMonth(-1)">‹</button>
+<div class="month-title" id="monthTitle"></div>
+<button class="nav-btn" onclick="changeMonth(1)">›</button>
+</div>
+</div>
+
+<div class="stats-row">
+<div class="stat-card"><div class="stat-label">Days done</div><div class="stat-val" id="statDone">0</div></div>
+<div class="stat-card"><div class="stat-label">Exercises</div><div class="stat-val" id="statEx">0</div></div>
+<div class="stat-card"><div class="stat-label">Streak 🔥</div><div class="stat-val" id="statStreak">0</div></div>
+</div>
+
+<div class="cal-grid" id="calGrid"></div>
+
+<div class="modal-bg" id="modalBg" onclick="bgClick(event)">
+<div class="modal">
+<div class="modal-header">
+<div class="modal-title" id="modalTitle"></div>
+<button class="close-btn" onclick="closeModal()">✕</button>
+</div>
+<div class="prog-row"><span class="prog-text" id="modalProg">0 of 0 done</span></div>
+<div class="progress-bar"><div class="progress-fill" id="modalFill"></div></div>
+<div id="modalBody"></div>
+</div>
+</div>
+
+<script>
+const DAYS=['Su','Mo','Tu','We','Th','Fr','Sa'];
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+const ALL_SECTIONS=[
+{name:'APT fix — stretch', dot:'d-apt', items:[
+{n:'Hip flexor stretch',d:'60 sec each side'},
+{n:'Quad stretch',d:'45 sec each side'},
+{n:'Chest opener stretch',d:'30 sec, hands behind back'}
+]},
+{name:'APT fix — strengthen', dot:'d-apt', items:[
+{n:'Glute bridge',d:'3 × 15 reps'},
+{n:'Dead bug',d:'3 × 10 each side'},
+{n:'McGill curl-up',d:'3 × 10 reps (lower back safe)'}
+]},
+{name:'Strength', dot:'d-str', items:[
+{n:'Bodyweight squats',d:'3 × 15 reps'},
+{n:'Push-ups',d:'3 × 12 reps'},
+{n:'Pike push-up',d:'3 × 10 reps'},
+{n:'Reverse lunges',d:'3 × 10 each leg'},
+{n:'Tricep dips on chair',d:'3 × 12 reps'}
+]},
+{name:'Core', dot:'d-str', items:[
+{n:'Plank hold',d:'3 × 30–45 sec'},
+{n:'Reverse crunch',d:'3 × 12 reps'},
+{n:'Bird dog',d:'3 × 10 each side'}
+]},
+{name:'Cardio — pick one', dot:'d-car', items:[
+{n:'Brisk walk',d:'40 min'},
+{n:'Jump rope',d:'20–30 min'},
+{n:'HIIT — burpees',d:'40 sec on / 20 sec rest × 5'},
+{n:'HIIT — high knees',d:'40 sec on / 20 sec rest × 5'},
+{n:'HIIT — mountain climbers',d:'40 sec on / 20 sec rest × 5'}
+]},
+{name:'Nutrition checklist', dot:'d-nut', items:[
+{n:'Hit 1,900–2,000 kcal',d:'Log in MyFitnessPal'},
+{n:'Hit 150g+ protein',d:'Chicken, eggs, lentils, paneer'},
+{n:'Drank 3–4 litres of water',d:'Track through the day'},
+{n:'No liquid calories',d:'No soda, juice or alcohol'},
+{n:'Logged all meals',d:'MyFitnessPal app'}
+]}
+];
+
+const TOTAL=ALL_SECTIONS.reduce((a,s)=>a+s.items.length,0);
+let state;
+try{state=JSON.parse(localStorage.getItem('fitCalFull2')||'{}');}catch(e){state={};}
+function save(){try{localStorage.setItem('fitCalFull2',JSON.stringify(state));}catch(e){}}
+
+const now=new Date();
+let viewYear=now.getFullYear(),viewMonth=now.getMonth(),openKey=null;
+
+function dKey(y,m,d){return`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`}
+function doneCount(key){const s=state[key]||{};return Object.values(s).filter(Boolean).length;}
+
+function renderCal(){
+const grid=document.getElementById('calGrid');
+grid.innerHTML=DAYS.map(d=>`<div class="day-label">${d}</div>`).join('');
+const first=new Date(viewYear,viewMonth,1).getDay();
+const days=new Date(viewYear,viewMonth+1,0).getDate();
+for(let i=0;i<first;i++) grid.innerHTML+=`<div class="day-cell empty"></div>`;
+for(let d=1;d<=days;d++){
+const key=dKey(viewYear,viewMonth,d);
+const done=doneCount(key);
+const pct=Math.round(done/TOTAL*100);
+const isToday=now.getFullYear()===viewYear&&now.getMonth()===viewMonth&&now.getDate()===d;
+const full=done===TOTAL;
+grid.innerHTML+=`<div class="day-cell${isToday?' today':''}${full?' full-done':''}" onclick="openDay(${d})">
+<div class="day-num">${d}</div>
+<div class="mini-prog"><div class="mini-fill" style="width:${pct}%"></div></div>
+<div class="done-count${full?' full':''}">${done}/${TOTAL}</div>
+</div>`;
+}
+document.getElementById('monthTitle').textContent=`${MONTHS[viewMonth]} ${viewYear}`;
+updateStats();
+}
+
+function updateStats(){
+const days=new Date(viewYear,viewMonth+1,0).getDate();
+let doneDays=0,totalEx=0;
+for(let d=1;d<=days;d++){
+const done=doneCount(dKey(viewYear,viewMonth,d));
+if(done===TOTAL) doneDays++;
+totalEx+=done;
+}
+document.getElementById('statDone').textContent=doneDays;
+document.getElementById('statEx').textContent=totalEx;
+let streak=0;
+const td=new Date(now);td.setHours(0,0,0,0);
+for(let i=0;i<365;i++){
+if(doneCount(dKey(td.getFullYear(),td.getMonth(),td.getDate()))>0) streak++;
+else break;
+td.setDate(td.getDate()-1);
+}
+document.getElementById('statStreak').textContent=streak;
+}
+
+function openDay(d){
+const key=dKey(viewYear,viewMonth,d);
+openKey=key;
+const s=state[key]||{};
+document.getElementById('modalTitle').textContent=`${d} ${MONTHS[viewMonth]}`;
+updateModalProg();
+let html='';
+ALL_SECTIONS.forEach(sec=>{
+html+=`<div class="sec-title"><span class="sec-dot ${sec.dot}"></span>${sec.name}</div>`;
+sec.items.forEach((item,i)=>{
+const ck=sec.name+'_'+i;
+const ticked=s[ck]?'ticked':'';
+html+=`<div class="ex-row ${ticked}" onclick="toggleEx('${ck}',this,event)">
+<div class="check"><span class="tick">✓</span></div>
+<div><div class="ex-name">${item.n}</div><div class="ex-detail">${item.d}</div></div>
+</div>`;
+});
+});
+document.getElementById('modalBody').innerHTML=html;
+document.getElementById('modalBg').classList.add('show');
+}
+
+function updateModalProg(){
+const done=doneCount(openKey);
+document.getElementById('modalProg').textContent=`${done} of ${TOTAL} done`;
+document.getElementById('modalFill').style.width=Math.round(done/TOTAL*100)+'%';
+}
+
+function toggleEx(ck,el,e){
+e.stopPropagation();
+if(!state[openKey]) state[openKey]={};
+state[openKey][ck]=!state[openKey][ck];
+el.classList.toggle('ticked',state[openKey][ck]);
+save();
+updateModalProg();
+renderCal();
+}
+
+function bgClick(e){if(e.target===document.getElementById('modalBg'))closeModal();}
+function closeModal(){document.getElementById('modalBg').classList.remove('show');openKey=null;}
+function changeMonth(dir){viewMonth+=dir;if(viewMonth>11){viewMonth=0;viewYear++;}if(viewMonth<0){viewMonth=11;viewYear--;}renderCal();}
+
+renderCal();
+</script>
+
+</body>
+</html>
